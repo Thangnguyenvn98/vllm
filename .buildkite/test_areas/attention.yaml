@@ -4,7 +4,7 @@ depends_on:
 steps:
 - label: ":nvidia: (H100) V1 Attention Shard %N"
   key: v1-attention-h100-mi300
-  timeout_in_minutes: 85
+  timeout_in_minutes: 45
   device: h100
   source_file_dependencies:
     - vllm/config/attention.py
@@ -12,14 +12,33 @@ steps:
     - vllm/v1/attention
     - tests/v1/attention
   commands:
-    - pytest -v -s v1/attention --shard-id=$$BUILDKITE_PARALLEL_JOB --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT
-  parallelism: 2
+    - |
+      set -eu
+      # One whole directory per pytest target; trailing comment is the measured
+      # pytest time of the branch. sparse_mla alone is ~28m, so it is hash-sharded
+      # across two indices; the ROCm-specific and non-flash-attn MLA correctness
+      # directories collect as skips on this lane and ride with the light branches.
+      case "$$BUILDKITE_PARALLEL_JOB" in
+        0) pytest -v -s v1/attention/sparse_mla --num-shards=2 --shard-id=0 ;; # 14m
+        1) pytest -v -s v1/attention/sparse_mla --num-shards=2 --shard-id=1 ;; # 14m
+        2) pytest -v -s v1/attention/mla/correctness/rocm_aiter_fa v1/attention/mla/correctness/trtllm_ragged v1/attention/rocm v1/attention/dcp ;; # 7m
+        3) pytest -v -s v1/attention/mla/correctness/flash_attn/deepseek v1/attention/mla/correctness/tokenspeed_mla ;; # 12m
+        4) pytest -v -s v1/attention/mla/backends v1/attention/mla/correctness/flash_attn/glm v1/attention/mla/correctness/flashinfer ;; # 14m
+        5) pytest -v -s v1/attention/dense v1/attention/ssm ;; # 15m
+        *) echo "unexpected BUILDKITE_PARALLEL_JOB=$$BUILDKITE_PARALLEL_JOB" >&2; exit 1 ;;
+      esac
+  parallelism: 6
   mirror:
     amd:
       label: ":amd: (MI300) V1 Attention Shard %N"
       dind: false
       device: mi300_1
       timeout_in_minutes: 125
+      # Keep the mirror on the whole-directory hash shard it runs today; the
+      # H100 branch assignment above is not measured on this lane.
+      parallelism: 2
+      commands:
+        - pytest -v -s v1/attention --shard-id=$$BUILDKITE_PARALLEL_JOB --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT
       depends_on:
       - image-build-amd
       source_file_dependencies:
