@@ -12,6 +12,13 @@ ROCM_CI_BAKE = REPO_ROOT / ".buildkite" / "scripts" / "ci-bake-rocm.sh"
 ROCM_IMAGE_SMOKE = REPO_ROOT / ".buildkite" / "scripts" / "rocm" / "smoke-test-image.sh"
 
 
+def test_cpu_test_image_includes_area_coverage_guard() -> None:
+    dockerfile = (REPO_ROOT / "docker/Dockerfile.cpu").read_text()
+    test_stage = dockerfile.split("FROM vllm-test-deps AS vllm-test\n", 1)[1]
+    test_stage = test_stage.split("\nFROM ", 1)[0]
+    assert "ADD ./tools/ ./tools/" in test_stage
+
+
 def run_helper(
     *args: str,
     env: dict[str, str] | None = None,
