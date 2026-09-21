@@ -109,9 +109,6 @@ steps:
   - tests/models/multimodal
   - tests/models/registry.py
   commands:
-    # One parametrized case per multimodal model (160 cases, ~57m of pytest at
-    # ~21s each), so sharding by case count balances well: measured p95 of the
-    # slowest shard is 16.6m at 5 shards, and the slowest single case is 1.2m.
     - pytest -v -s models/multimodal/processing/test_tensor_schema.py --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
   parallelism: 5
   mirror:
