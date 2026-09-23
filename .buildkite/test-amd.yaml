@@ -2097,7 +2097,8 @@ steps:
   - tests/models/language
   commands:
   - pip freeze | grep -E 'torch'
-  - pytest -v -s models/language -m 'core_model and (not slow_test)'
+  - pytest -v -s models/language/generation/test_core.py
+  - pytest -v -s models/language/pooling -m 'core_model and (not slow_test)'
 
 - label: ":amd: (MI300) Language Models (Extra Standard) Shard %N" # TBD
   timeout_in_minutes: 40
@@ -2121,7 +2122,8 @@ steps:
   - vllm/platforms/rocm.py
   commands:
   - pip freeze | grep -E 'torch'
-  - pytest -v -s models/language -m 'core_model and slow_test' --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
+  - test "$$BUILDKITE_PARALLEL_JOB" != 0 || pytest -v -s models/language/generation/test_core_slow.py
+  - pytest -v -s models/language/pooling -m 'core_model and slow_test' --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
 
 - label: ":amd: (MI300) Language Models (Extended Generation)" # TBD
   timeout_in_minutes: 95
@@ -2136,7 +2138,7 @@ steps:
   commands:
   - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
   - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-  - pytest -v -s models/language/generation -m '(not core_model) and (not hybrid_model)'
+  - pytest -v -s models/language/generation/extended
 
 #----------------------------------------------------  mi300 · models / multimodal  ----------------------------------------------------#
 
@@ -4597,7 +4599,7 @@ steps:
   - export GIT_CONFIG_VALUE_0=HTTP/1.1
   - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
   - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-  - pytest -v -s models/language/generation -m hybrid_model -k 'not granite-4.0-tiny-preview' --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
+  - pytest -v -s models/language/generation/hybrid --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
 
 - label: ":amd: (MI355) Granite Language Model Compatibility"
   timeout_in_minutes: 80
@@ -4617,7 +4619,7 @@ steps:
   - export GIT_CONFIG_VALUE_0=HTTP/1.1
   - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
   - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-  - pytest -v -s models/language/generation -m hybrid_model -k 'granite-4.0-tiny-preview'
+  - pytest -v -s models/language/generation/test_granite_4_hybrid.py
 
 - label: ":amd: (MI355) Language Models (Extended Generation)" # TBD
   timeout_in_minutes: 95
@@ -4632,7 +4634,7 @@ steps:
   commands:
   - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@rocm-7.0-v2.3.0'
   - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-  - pytest -v -s models/language/generation -m '(not core_model) and (not hybrid_model)'
+  - pytest -v -s models/language/generation/extended
 
 - label: ":amd: (MI355) Language Models (Extended Pooling) Shard %N"
   timeout_in_minutes: 95
@@ -4691,7 +4693,8 @@ steps:
   optional: true
   commands:
   - pip freeze | grep -E 'torch'
-  - pytest -v -s models/language -m 'core_model and (not slow_test)'
+  - pytest -v -s models/language/generation/test_core.py
+  - pytest -v -s models/language/pooling -m 'core_model and (not slow_test)'
 
 #----------------------------------------------------  mi355 · models / multimodal  ----------------------------------------------------#
 

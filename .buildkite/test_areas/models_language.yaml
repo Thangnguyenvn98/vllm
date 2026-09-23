@@ -26,7 +26,7 @@ steps:
       depends_on:
       - image-build-amd
 
-- label: ":nvidia: (H200 MIG 35GB) Language Models (Extra Standard)"
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extra Standard) Shard %N"
   device: h200_35gb
   key: language-models-tests-extra-standard
   timeout_in_minutes: 40
@@ -41,11 +41,12 @@ steps:
     # are modified. the core-slow test file is run whole; the pooling slow selection stays
     # marker-based (out of split scope, same as the Standard job).
     - pip freeze | grep -E 'torch'
-    - pytest -v -s models/language/generation/test_core_slow.py
-    - pytest -v -s models/language/pooling -m 'core_model and slow_test'
+    - test "$$BUILDKITE_PARALLEL_JOB" != 0 || pytest -v -s models/language/generation/test_core_slow.py
+    - pytest -v -s models/language/pooling -m 'core_model and slow_test' --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
+  parallelism: 2
   mirror:
     amd:
-      label: ":amd: (MI300) Language Models (Extra Standard)"
+      label: ":amd: (MI300) Language Models (Extra Standard) Shard %N"
       dind: false
       device: mi300_1
       timeout_in_minutes: 40
@@ -87,7 +88,7 @@ steps:
     - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
     - pip freeze | grep -E 'torch'
     - pytest -v -s models/language/generation/hybrid --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
-  parallelism: 6
+  parallelism: 2
   mirror:
     amd:
       label: ":amd: (MI355) Language Models (Hybrid) Shard %N"
@@ -149,7 +150,7 @@ steps:
       - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
       - pytest -v -s models/language/generation/test_granite_4_hybrid.py
 
-- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Generation) Shard %N"
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Generation)"
   device: h200_35gb
   key: language-models-test-extended-generation
   timeout_in_minutes: 80
@@ -166,11 +167,10 @@ steps:
     # mamba@v2.3.0 pins -std=c++17, so build from a patched checkout instead of the git URL.
     - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
     - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-    - pytest -v -s models/language/generation/extended --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
-  parallelism: 5
+    - pytest -v -s models/language/generation/extended
   mirror:
     amd:
-      label: ":amd: (MI355) Language Models (Extended Generation) Shard %N"
+      label: ":amd: (MI355) Language Models (Extended Generation)"
       dind: false
       device: mi355_1
       timeout_in_minutes: 95
@@ -179,7 +179,7 @@ steps:
       commands:
       - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
       - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-      - pytest -v -s models/language/generation/extended --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
+      - pytest -v -s models/language/generation/extended
 
 
 - label: ":nvidia: (H200 MIG 18GB) Language Models (PPL)"

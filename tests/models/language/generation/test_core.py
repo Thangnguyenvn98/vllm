@@ -28,7 +28,7 @@ from vllm.platforms import current_platform
             marks=[pytest.mark.core_model, pytest.mark.cpu_model],
         ),
         pytest.param(
-            "TitanML/tiny-mixtral",  # mixtral
+            "axolotl-ai-co/tiny-mixtral-30m",  # mixtral
             marks=[pytest.mark.core_model],
         ),
     ],
