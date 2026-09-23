@@ -239,15 +239,15 @@ steps:
       - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
       - pytest -v -s models/language/generation/test_granite_4_hybrid.py
 
-- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Generation)"
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Granite and MoE)"
   device: h200_35gb
-  key: language-models-test-extended-generation
+  key: language-models-extended-granite-moe
   timeout_in_minutes: 80
   optional: true
   source_file_dependencies:
   - vllm/
   - "!vllm/distributed/kv_transfer/"
-  - tests/models/language/generation/extended/
+  - tests/models/language/generation/extended/granite_moe/
   - tests/models/language/generation/_common_models.py
   - tests/models/language/generation/_granite_models.py
   commands:
@@ -256,10 +256,10 @@ steps:
     # mamba@v2.3.0 pins -std=c++17, so build from a patched checkout instead of the git URL.
     - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
     - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-    - pytest -v -s models/language/generation/extended
+    - pytest -v -s models/language/generation/extended/granite_moe
   mirror:
     amd:
-      label: ":amd: (MI355) Language Models (Extended Generation)"
+      label: ":amd: (MI355) Language Models (Extended Granite and MoE)"
       dind: false
       device: mi355_1
       timeout_in_minutes: 95
@@ -268,7 +268,119 @@ steps:
       commands:
       - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
       - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-      - pytest -v -s models/language/generation/extended
+      - pytest -v -s models/language/generation/extended/granite_moe
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Gemma)"
+  device: h200_35gb
+  key: language-models-extended-gemma
+  timeout_in_minutes: 80
+  optional: true
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/test_gemma_cpu.py
+  - tests/models/language/generation/test_gemma_dummy_loader.py
+  - tests/models/language/generation/test_models_gemma2_gptj.py
+  - tests/models/language/generation/_common_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    # Keep the CPU fixture's distributed context out of the engine process.
+    - pytest -v -s models/language/generation/test_gemma_cpu.py
+    - pytest -v -s models/language/generation/test_gemma_dummy_loader.py models/language/generation/test_models_gemma2_gptj.py
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Extended Gemma)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 95
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/test_gemma_cpu.py
+      - pytest -v -s models/language/generation/test_gemma_dummy_loader.py models/language/generation/test_models_gemma2_gptj.py
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Reference Models)"
+  device: h200_35gb
+  key: language-models-extended-reference-models
+  timeout_in_minutes: 80
+  optional: true
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/extended/reference_models/
+  - tests/models/language/generation/_common_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/extended/reference_models
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Extended Reference Models)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 95
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/extended/reference_models
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended Mistral)"
+  device: h200_35gb
+  key: language-models-extended-mistral
+  timeout_in_minutes: 80
+  optional: true
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/test_mistral.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/test_mistral.py
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Extended Mistral)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 95
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/test_mistral.py
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Extended StableLM and StarCoder)"
+  device: h200_35gb
+  key: language-models-extended-stablelm-starcoder
+  timeout_in_minutes: 80
+  optional: true
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/test_models_stablelm_starcoder.py
+  - tests/models/language/generation/_common_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/test_models_stablelm_starcoder.py
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Extended StableLM and StarCoder)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 95
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/test_models_stablelm_starcoder.py
 
 
 - label: ":nvidia: (H200 MIG 18GB) Language Models (PPL)"

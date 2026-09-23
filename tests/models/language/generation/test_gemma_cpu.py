@@ -3,7 +3,6 @@
 from types import SimpleNamespace
 from typing import cast
 
-import numpy as np
 import pytest
 import torch
 
@@ -18,8 +17,6 @@ from vllm.model_executor.models.gemma4 import (
     Gemma4ForCausalLM,
     _gemma4_layer_weights_mapper,
 )
-
-MODELS = ["google/gemma-2b", "google/gemma-2-2b", "google/gemma-3-4b-it"]
 
 
 @pytest.mark.cpu_test
@@ -80,7 +77,6 @@ def test_gemma4_attention_mapper() -> None:
         ("model.layers.0.mlp.up_proj.weight", torch.empty(0)),
         ("model.layers.1.self_attn.v_proj.weight", torch.empty(0)),
     ]
-
     mapper = _gemma4_layer_weights_mapper(config)
     mapped = list(mapper.apply(weights))
 
@@ -152,26 +148,3 @@ def test_gemma3n_kv_shared_layer_mapper() -> None:
         ("layers.3.self_attn.q_proj.weight", None),
         ("layers.3.self_attn.o_proj.weight", None),
     ]
-
-
-@pytest.mark.parametrize("model", MODELS)
-def test_dummy_loader(vllm_runner, monkeypatch, model: str) -> None:
-    with monkeypatch.context() as m:
-        m.setenv("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
-        with vllm_runner(
-            model,
-            load_format="dummy",
-        ) as llm:
-            if model == "google/gemma-3-4b-it":
-                normalizers = llm.llm.collective_rpc(
-                    lambda self: (
-                        self.model_runner.model.language_model.model.normalizer.cpu().item()
-                    )  # noqa: E501
-                )
-                config = llm.llm.llm_engine.model_config.hf_config.text_config
-            else:
-                normalizers = llm.llm.collective_rpc(
-                    lambda self: self.model_runner.model.model.normalizer.cpu().item()
-                )
-                config = llm.llm.llm_engine.model_config.hf_config
-            assert np.allclose(normalizers, config.hidden_size**0.5, rtol=2e-3)

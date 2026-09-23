@@ -61,7 +61,7 @@ def test_phimoe_routing_function():
 
 # There is a known issue that triggers `AttributeError: 'DynamicCache'
 # object has no attribute 'seen_tokens'` when running:
-# `tests/models/language/generation/extended/test_phimoe.py::test_models
+# `tests/models/language/generation/extended/granite_moe/test_phimoe.py::test_models
 #   [5-64-bfloat16-microsoft/Phi-3.5-MoE-instruct]`
 # This issue is being investigated and tracked in:
 #   https://huggingface.co/microsoft/Phi-3.5-MoE-instruct/discussions/58
