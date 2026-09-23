@@ -65,9 +65,9 @@ steps:
       - vllm/_aiter_ops.py
       - vllm/platforms/rocm.py
 
-- label: ":nvidia: (H200 MIG 35GB) Language Models (Hybrid) Shard %N"
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Hybrid APC)"
   device: h200_35gb
-  key: language-models-tests-hybrid
+  key: language-models-hybrid-apc
   timeout_in_minutes: 65
   env:
     # GitHub intermittently rejects HTTP/2 upload-pack requests from the H200
@@ -78,7 +78,7 @@ steps:
   source_file_dependencies:
   - vllm/
   - "!vllm/distributed/kv_transfer/"
-  - tests/models/language/generation/hybrid/
+  - tests/models/language/generation/hybrid/apc/
   - tests/models/language/generation/_hybrid_models.py
   commands:
     # Install fast path packages for testing against transformers
@@ -87,11 +87,10 @@ steps:
     - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
     - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
     - pip freeze | grep -E 'torch'
-    - pytest -v -s models/language/generation/hybrid --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
-  parallelism: 2
+    - pytest -v -s models/language/generation/hybrid/apc
   mirror:
     amd:
-      label: ":amd: (MI355) Language Models (Hybrid) Shard %N"
+      label: ":amd: (MI355) Language Models (Hybrid APC)"
       dind: false
       device: mi355_1
       timeout_in_minutes: 65
@@ -100,7 +99,97 @@ steps:
       commands:
       - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
       - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
-      - pytest -v -s models/language/generation/hybrid --num-shards=$$BUILDKITE_PARALLEL_JOB_COUNT --shard-id=$$BUILDKITE_PARALLEL_JOB
+      - pytest -v -s models/language/generation/hybrid/apc
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Hybrid Cache)"
+  device: h200_35gb
+  key: language-models-hybrid-cache
+  timeout_in_minutes: 65
+  env:
+    GIT_CONFIG_COUNT: "1"
+    GIT_CONFIG_KEY_0: http.version
+    GIT_CONFIG_VALUE_0: HTTP/1.1
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/hybrid/cache/
+  - tests/models/language/generation/_hybrid_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/hybrid/cache
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Hybrid Cache)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 65
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/hybrid/cache
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Hybrid Models)"
+  device: h200_35gb
+  key: language-models-hybrid-models
+  timeout_in_minutes: 65
+  env:
+    GIT_CONFIG_COUNT: "1"
+    GIT_CONFIG_KEY_0: http.version
+    GIT_CONFIG_VALUE_0: HTTP/1.1
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/hybrid/models/
+  - tests/models/language/generation/_hybrid_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/hybrid/models
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Hybrid Models)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 65
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/hybrid/models
+
+- label: ":nvidia: (H200 MIG 35GB) Language Models (Hybrid Execution)"
+  device: h200_35gb
+  key: language-models-hybrid-execution
+  timeout_in_minutes: 65
+  env:
+    GIT_CONFIG_COUNT: "1"
+    GIT_CONFIG_KEY_0: http.version
+    GIT_CONFIG_VALUE_0: HTTP/1.1
+  source_file_dependencies:
+  - vllm/
+  - "!vllm/distributed/kv_transfer/"
+  - tests/models/language/generation/hybrid/execution/
+  - tests/models/language/generation/_hybrid_models.py
+  commands:
+    - rm -rf /tmp/mamba-src && git clone --depth 1 --branch v2.3.0 https://github.com/state-spaces/mamba /tmp/mamba-src && sed -i 's/-std=c++17/-std=c++20/g' /tmp/mamba-src/setup.py && MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation /tmp/mamba-src
+    - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+    - pytest -v -s models/language/generation/hybrid/execution
+  mirror:
+    amd:
+      label: ":amd: (MI355) Language Models (Hybrid Execution)"
+      dind: false
+      device: mi355_1
+      timeout_in_minutes: 65
+      depends_on:
+      - image-build-amd
+      commands:
+      - MAMBA_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/AndreasKaratzas/mamba@fix-rocm-7.0-warp-size-constexpr'
+      - CAUSAL_CONV1D_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation 'git+https://github.com/Dao-AILab/causal-conv1d@v1.6.0'
+      - pytest -v -s models/language/generation/hybrid/execution
 
 # Granite 4 hybrid generation is sensitive to hardware-specific Triton SSD
 # autotuning (https://github.com/vllm-project/vllm/issues/25194). Keep this one
