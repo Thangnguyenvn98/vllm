@@ -6,7 +6,7 @@ steps:
     depends_on: []
     key: image-build-xpu
     commands:
-      - bash -lc '.buildkite/image_build/image_build_xpu.sh "public.ecr.aws/q9t5s3a7" "vllm-ci-test-repo" "$BUILDKITE_COMMIT"'
+      - .buildkite/image_build/log_host_memory.sh bash -lc '.buildkite/image_build/image_build_xpu.sh "public.ecr.aws/q9t5s3a7" "vllm-ci-test-repo" "$BUILDKITE_COMMIT"'
     env:
       DOCKER_BUILDKIT: "1"
     retry:
